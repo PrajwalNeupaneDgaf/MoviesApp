@@ -11,7 +11,7 @@ import TVShowsTab from './Components/Movies/TVShowsTab';
 function App() {
   return (
     <ChakraProvider>
-      <Router>
+      <Router basename='/MoviesApp'>
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
