@@ -1,4 +1,4 @@
-import { Box, Image, Text, Flex, Spinner, Grid, Tag, Button, HStack } from '@chakra-ui/react';
+import { Box, Image, Text, Flex, Spinner, Grid, Tag, Button, HStack, Select } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -7,6 +7,11 @@ function MoviesDetails() {
     const [actors, setActors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [trailerUrl, setTrailerUrl] = useState('');
+    const [movieIMDBId, setMovieIMDBId] = useState('');
+    const [seasons, setSeasons] = useState([]);
+    const [selectedSeason, setSelectedSeason] = useState(1);
+    const [episodes, setEpisodes] = useState([]);
+    const [selectedEpisode, setSelectedEpisode] = useState(1);
 
     const { id, type } = useParams();
     const api = 'dd3e936ca789d015487ecda9d59bd5fc';
@@ -15,28 +20,49 @@ function MoviesDetails() {
         fetchData();
     }, [id, type]);
 
+    useEffect(() => {
+        if (type === 'tv' && selectedSeason) {
+            fetchEpisodes(selectedSeason);
+        }
+    }, [selectedSeason, type]);
+
     const fetchData = async () => {
         setLoading(true);
         try {
             const movieResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${api}`);
             const movieData = await movieResponse.json();
             setMovie(movieData);
-            console.log(movieData)
+            setMovieIMDBId(movieData.imdb_id); // Store IMDb ID
+
+            if (type === 'tv') {
+                setSeasons(movieData.seasons || []);
+            }
 
             // Fetch actors
             const creditsResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}/credits?api_key=${api}`);
             const creditsData = await creditsResponse.json();
-            setActors(creditsData.cast.slice(0, 5)); // Get first 5 actors for display
+            setActors(creditsData.cast.slice(0, 10)); // Get first 10 actors for display
 
             // Fetch trailers
             const videosResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}/videos?api_key=${api}`);
             const videosData = await videosResponse.json();
-            const trailer = videosData.results.find(video => video.type === 'Trailer');
+            const trailer = videosData.results.find((video) => video.type === 'Trailer');
             setTrailerUrl(trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : '');
         } catch (error) {
             console.error('Error fetching movie details:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchEpisodes = async (seasonNumber) => {
+        try {
+            const episodesResponse = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${seasonNumber}?api_key=${api}`);
+            const episodesData = await episodesResponse.json();
+            setEpisodes(episodesData.episodes || []);
+            setSelectedEpisode(episodesData.episodes?.[0]?.episode_number || 1); // Default to the first episode
+        } catch (error) {
+            console.error('Error fetching episodes:', error);
         }
     };
 
@@ -88,6 +114,49 @@ function MoviesDetails() {
                     )}
                 </Box>
             </Box>
+
+            {/* Iframe Section for Movies and TV Shows */}
+            <Box p={6} mb={8}>
+                {type === 'movie' ? (
+                    <iframe
+                        src={`https://moviesapi.club/movie/${movieIMDBId}`}
+                        width="100%"
+                        height="500px"
+                        style={{ border: 'none' }}
+                        title="Watch Movie"
+                        allowFullScreen
+                    ></iframe>
+                ) : (
+                    <Box>
+                        {/* Season and Episode Selection */}
+                        <HStack mb={4} spacing={4}>
+                            <Select placeholder="Select Season" value={selectedSeason} onChange={(e) => setSelectedSeason(e.target.value)}>
+                                {seasons.map((season) => (
+                                    <option key={season.season_number} value={season.season_number}>
+                                        {season.name}
+                                    </option>
+                                ))}
+                            </Select>
+                            <Select placeholder="Select Episode" value={selectedEpisode} onChange={(e) => setSelectedEpisode(e.target.value)}>
+                                {episodes.map((episode) => (
+                                    <option key={episode.episode_number} value={episode.episode_number}>
+                                        {episode.name}
+                                    </option>
+                                ))}
+                            </Select>
+                        </HStack>
+                        <iframe
+                            src={`https://moviesapi.club/tv/${id}-${selectedSeason}-${selectedEpisode}`}
+                            width="100%"
+                            height="500px"
+                            style={{ border: 'none' }}
+                            title="Watch TV Episode"
+                            allowFullScreen
+                        ></iframe>
+                    </Box>
+                )}
+            </Box>
+
             {/* Content Section */}
             <Grid templateColumns={{ base: '1fr', md: '1fr 2fr' }} gap={6} p={6} alignItems='start'>
                 {/* Movie Poster */}
@@ -113,6 +182,7 @@ function MoviesDetails() {
                     </Flex>
                 </Box>
             </Grid>
+            
             {/* Actors Section */}
             <Box p={6}>
                 <Text fontSize='2xl' fontWeight='bold' mb={4}>Actors</Text>

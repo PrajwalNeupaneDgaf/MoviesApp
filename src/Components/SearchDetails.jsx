@@ -1,4 +1,4 @@
-import { Box, Image, Text, Flex, Spinner, Grid, ButtonGroup, Button, Select } from '@chakra-ui/react';
+import { Box, Image, Text, Flex, Spinner, Grid, ButtonGroup, Button } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
