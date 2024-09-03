@@ -9,35 +9,43 @@ function SearchDetails() {
     const [noResults, setNoResults] = useState(false);
     const [searchType, setSearchType] = useState('movie'); // Default to movie
     const [currentPage, setCurrentPage] = useState(1); // State for current page
+    const [totalPages, setTotalPages] = useState(0); // State for total pages
 
     const { search } = useParams();
     const navigate = useNavigate();
     const apiKey = 'dd3e936ca789d015487ecda9d59bd5fc';
 
+    // Effect for fetching data based on search type, search query, and current page
     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setNoResults(false);
+            try {
+                const response = await fetch(
+                    `https://api.themoviedb.org/3/search/${searchType}?api_key=${apiKey}&query=${search}&page=${currentPage}`
+                );
+                const data = await response.json();
+                setData(data.results || []);
+                setTotalResults(data.total_results || 0);
+                setTotalPages(data.total_pages || 0); // Set total pages
+                setNoResults(data.total_results === 0);
+            } catch (error) {
+                console.error('Error fetching search results:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchData();
     }, [searchType, search, currentPage]);
 
-    const fetchData = async () => {
-        setLoading(true);
-        setNoResults(false);
-        try {
-            const response = await fetch(
-                `https://api.themoviedb.org/3/search/${searchType}?api_key=${apiKey}&query=${search}&page=${currentPage}`
-            );
-            const data = await response.json();
-            setData(data.results || []);
-            setTotalResults(data.total_results || 0);
-            setNoResults(data.total_results === 0);
-        } catch (error) {
-            console.error('Error fetching search results:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Reset to page 1 when searchType or search query changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchType, search]);
 
     const handleNextPage = () => {
-        setCurrentPage((prevPage) => prevPage + 1);
+        setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
     };
 
     const handlePreviousPage = () => {
@@ -50,19 +58,13 @@ function SearchDetails() {
             <ButtonGroup spacing={4} mb={4}>
                 <Button
                     colorScheme={searchType === 'movie' ? 'teal' : 'gray'}
-                    onClick={() => {
-                        setSearchType('movie');
-                        setCurrentPage(1); // Reset to page 1 on search type change
-                    }}
+                    onClick={() => setSearchType('movie')}
                 >
                     Movies
                 </Button>
                 <Button
                     colorScheme={searchType === 'tv' ? 'teal' : 'gray'}
-                    onClick={() => {
-                        setSearchType('tv');
-                        setCurrentPage(1); // Reset to page 1 on search type change
-                    }}
+                    onClick={() => setSearchType('tv')}
                 >
                     TV Shows
                 </Button>
@@ -107,18 +109,23 @@ function SearchDetails() {
                                 ))}
                             </Grid>
                             {/* Pagination Controls */}
-                            <Flex justifyContent="center" alignItems="center" mt={4}>
-                                <Button
-                                    onClick={handlePreviousPage}
-                                    isDisabled={currentPage === 1}
-                                    mr={2}
-                                >
-                                    Previous
-                                </Button>
-                                <Button onClick={handleNextPage}>
-                                    Next
-                                </Button>
-                            </Flex>
+                            {totalPages > 1 && ( // Only show pagination if there are multiple pages
+                                <Flex justifyContent="center" alignItems="center" mt={4}>
+                                    <Button
+                                        onClick={handlePreviousPage}
+                                        isDisabled={currentPage === 1}
+                                        mr={2}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        onClick={handleNextPage}
+                                        isDisabled={currentPage >= totalPages}
+                                    >
+                                        Next
+                                    </Button>
+                                </Flex>
+                            )}
                         </>
                     )}
                 </Box>
