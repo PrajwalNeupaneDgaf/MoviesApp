@@ -1,5 +1,5 @@
 {
-  "homepage": "https://PrajwalNeupaneDgaf.github.io/MoviesApp",
+   "homepage": "https://PrajwalNeupaneDgaf.github.io/MoviesApp",
   "name": "movieshub",
   "version": "0.1.0",
   "private": false,
@@ -51,3 +51,4 @@
     "tailwindcss": "^3.4.10"
   }
 }
+

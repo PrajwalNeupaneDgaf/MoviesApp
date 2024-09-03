@@ -30,7 +30,7 @@ function Search() {
         value={search}
         />
         <InputRightElement onClick={(e)=>{
-            HandleSearch(e.target.value)
+            HandleSearch(search)
         }} children={<SearchIcon color="gray.300" />}/>
     </InputGroup>
    </Box>

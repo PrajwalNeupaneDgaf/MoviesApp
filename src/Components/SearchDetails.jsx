@@ -8,6 +8,7 @@ function SearchDetails() {
     const [totalResults, setTotalResults] = useState(0);
     const [noResults, setNoResults] = useState(false);
     const [searchType, setSearchType] = useState('movie'); // Default to movie
+    const [currentPage, setCurrentPage] = useState(1); // State for current page
 
     const { search } = useParams();
     const navigate = useNavigate();
@@ -15,13 +16,15 @@ function SearchDetails() {
 
     useEffect(() => {
         fetchData();
-    }, [searchType, search]);
+    }, [searchType, search, currentPage]);
 
     const fetchData = async () => {
         setLoading(true);
         setNoResults(false);
         try {
-            const response = await fetch(`https://api.themoviedb.org/3/search/${searchType}?api_key=${apiKey}&query=${search}`);
+            const response = await fetch(
+                `https://api.themoviedb.org/3/search/${searchType}?api_key=${apiKey}&query=${search}&page=${currentPage}`
+            );
             const data = await response.json();
             setData(data.results || []);
             setTotalResults(data.total_results || 0);
@@ -33,19 +36,33 @@ function SearchDetails() {
         }
     };
 
+    const handleNextPage = () => {
+        setCurrentPage((prevPage) => prevPage + 1);
+    };
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prevPage) => (prevPage > 1 ? prevPage - 1 : 1));
+    };
+
     return (
         <Box p={5}>
             {/* Category Switcher */}
             <ButtonGroup spacing={4} mb={4}>
                 <Button
                     colorScheme={searchType === 'movie' ? 'teal' : 'gray'}
-                    onClick={() => setSearchType('movie')}
+                    onClick={() => {
+                        setSearchType('movie');
+                        setCurrentPage(1); // Reset to page 1 on search type change
+                    }}
                 >
                     Movies
                 </Button>
                 <Button
                     colorScheme={searchType === 'tv' ? 'teal' : 'gray'}
-                    onClick={() => setSearchType('tv')}
+                    onClick={() => {
+                        setSearchType('tv');
+                        setCurrentPage(1); // Reset to page 1 on search type change
+                    }}
                 >
                     TV Shows
                 </Button>
@@ -63,31 +80,46 @@ function SearchDetails() {
                     {noResults ? (
                         <Text>No results found</Text>
                     ) : (
-                        <Grid templateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap={6}>
-                            {data.map((item) => (
-                                <Box
-                                    key={item.id}
-                                    borderWidth="1px"
-                                    borderRadius="lg"
-                                    overflow="hidden"
-                                    p={3}
-                                    onClick={() => navigate(`/details/${item.id}/${searchType}`)}
+                        <>
+                            <Grid templateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap={6}>
+                                {data.map((item) => (
+                                    <Box
+                                        key={item.id}
+                                        borderWidth="1px"
+                                        borderRadius="lg"
+                                        overflow="hidden"
+                                        p={3}
+                                        onClick={() => navigate(`/details/${item.id}/${searchType}`)}
+                                    >
+                                        <Image
+                                            src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                                            alt={item.title || item.name}
+                                            borderRadius="md"
+                                            mb={2}
+                                        />
+                                        <Text fontWeight="bold" fontSize="lg" mb={1}>
+                                            {item.title || item.name}
+                                        </Text>
+                                        <Text fontSize="sm" color="gray.500">
+                                            ⭐ {item.vote_average}
+                                        </Text>
+                                    </Box>
+                                ))}
+                            </Grid>
+                            {/* Pagination Controls */}
+                            <Flex justifyContent="center" alignItems="center" mt={4}>
+                                <Button
+                                    onClick={handlePreviousPage}
+                                    isDisabled={currentPage === 1}
+                                    mr={2}
                                 >
-                                    <Image
-                                        src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
-                                        alt={item.title || item.name}
-                                        borderRadius="md"
-                                        mb={2}
-                                    />
-                                    <Text fontWeight="bold" fontSize="lg" mb={1}>
-                                        {item.title || item.name}
-                                    </Text>
-                                    <Text fontSize="sm" color="gray.500">
-                                        ⭐ {item.vote_average}
-                                    </Text>
-                                </Box>
-                            ))}
-                        </Grid>
+                                    Previous
+                                </Button>
+                                <Button onClick={handleNextPage}>
+                                    Next
+                                </Button>
+                            </Flex>
+                        </>
                     )}
                 </Box>
             )}
